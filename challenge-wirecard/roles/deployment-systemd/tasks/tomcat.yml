@@ -1,0 +1,5 @@
+---
+ - name: tomcat | deployment
+   copy: src=devopschallenge.war dest={{ tomcat_webapp_dir }} 
+   register: war
+   notify: tomcat restart

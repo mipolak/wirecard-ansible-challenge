@@ -1,0 +1,486 @@
+####################################################################
+# ANSIBLE PLAYBOOK EXECUTION IN DOCKER CONTAINER
+####################################################################
+
+[root@master challenge]# docker build .
+Sending build context to Docker daemon  30.8 MB
+Step 1/11 : FROM williamyeh/ansible:centos7
+Trying to pull repository docker.io/williamyeh/ansible ...
+centos7: Pulling from docker.io/williamyeh/ansible
+469cfcc7a4b3: Pull complete
+ecfdf36adbe2: Pull complete
+Digest: sha256:b719acbd395773e8b49c913617c822673837e537122fc229b038131c080f5e93
+Status: Downloaded newer image for docker.io/williamyeh/ansible:centos7
+ ---> 740848c0fd0f
+Step 2/11 : MAINTAINER Michal Polak <misopo@gmail.com>
+ ---> Running in 3d0061bea992
+ ---> df80f97e6f5a
+Removing intermediate container 3d0061bea992
+Step 3/11 : ENV container docker
+ ---> Running in 7d301d16d2b3
+ ---> dcd9f5ca4850
+Removing intermediate container 7d301d16d2b3
+Step 4/11 : RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); rm -f /lib/systemd/system/multi-user.target.wants/*;rm -f /etc/systemd/system/*.wants/*;rm -f /lib/systemd/system/local-fs.target.wants/*; rm -f /lib/systemd/system/sockets.target.wants/*udev*; rm -f /lib/systemd/system/sockets.target.wants/*initctl*; rm -f /lib/systemd/system/basic.target.wants/*;rm -f /lib/systemd/system/anaconda.target.wants/*;
+ ---> Running in 6943f22cd350
+
+ ---> 24a82ef72313
+Removing intermediate container 6943f22cd350
+Step 5/11 : RUN mkdir -p /run/httpd
+ ---> Running in 96d8aee02e56
+
+ ---> 598532b22e0b
+Removing intermediate container 96d8aee02e56
+Step 6/11 : VOLUME /sys/fs/cgroup
+ ---> Running in f4cd497bbbfc
+ ---> 235142d7aa8f
+Removing intermediate container f4cd497bbbfc
+Step 7/11 : EXPOSE 80
+ ---> Running in 0f6df8c90e22
+ ---> a9e5766d4c05
+Removing intermediate container 0f6df8c90e22
+Step 8/11 : EXPOSE 443
+ ---> Running in 5a5d344fb6f2
+ ---> b95bfaf2072c
+Removing intermediate container 5a5d344fb6f2
+Step 9/11 : CMD /usr/sbin/init
+ ---> Running in 965820d37c78
+ ---> 8fb0e2580792
+Removing intermediate container 965820d37c78
+Step 10/11 : WORKDIR /tmp
+ ---> d7586eb08c7b
+Removing intermediate container ec5674d68ff7
+Step 11/11 : COPY . /tmp
+ ---> adfb1558f761
+Removing intermediate container 7826f593289e
+Successfully built adfb1558f761
+[root@master challenge]# docker create -t -v /sys/fs/cgroup:/sys/fs/cgroup:ro -p 80:80 -p 443:443  -i adfb1558f761 bash
+b9bff990afbfb86bdf017be14b119b558e158556528b6256affcb5d57356423c
+[root@master challenge]# docker start -a -i b9bff990afbfb86bdf017be14b119b558e158556528b6256affcb5d57356423c
+[root@b9bff990afbf tmp]# ansible-playbook challenge-wirecard/playbook-docker.yml
+
+PLAY [localhost] ****************************************************************************************************************************************************
+
+TASK [installation-docker : tomcat | java installation] *************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | group add] *********************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | user add] **********************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | binary download] ***************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | extract archive] ***************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | symlink install directory] *****************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | change ownership of target installation] ***************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | installation of  start stop scripts] *******************************************************************************************
+changed: [localhost] => (item={u'dest': u'/opt/tomcat-latest/bin/tomcat_stop', u'src': u'tomcat_stop.j2'})
+changed: [localhost] => (item={u'dest': u'/opt/tomcat-latest/bin/tomcat_start', u'src': u'tomcat_start.j2'})
+
+TASK [installation-docker : tomcat | start] *************************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : create self-signed SSL cert] ************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : httpd | installation] *******************************************************************************************************************
+changed: [localhost] => (item=[u'httpd', u'mod_ssl'])
+
+TASK [installation-docker : httpd | configuration] ******************************************************************************************************************
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf/httpd.conf', u'name': u'httpd.conf.j2'})
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf.d/challenge.conf', u'name': u'challenge.conf.j2'})
+
+TASK [installation-docker : httpd | disabling of default configuration] *********************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : httpd | writting FQDN to hosts file] ****************************************************************************************************
+changed: [localhost]
+
+TASK [installation-docker : httpd start] ****************************************************************************************************************************
+changed: [localhost]
+
+TASK [deployment-docker : tomcat | deployment] **********************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : pause] *******************************************************************************************************************************************
+Pausing for 20 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [localhost]
+
+TASK [monitoring : tomcat process] **********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "tomcat     439     1 20 17:58 ?        00:00:15 /usr/bin/java -Djava.util.logging.config.file=/opt/tomcat-latest/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -Dignore.endorsed.dirs= -classpath /opt/tomcat-latest/bin/bootstrap.jar:/opt/tomcat-latest/bin/tomcat-juli.jar -Dcatalina.base=/opt/tomcat-latest -Dcatalina.home=/opt/tomcat-latest -Djava.io.tmpdir=/opt/tomcat-latest/temp org.apache.catalina.startup.Bootstrap start"
+}
+
+TASK [monitoring : httpd processes] *********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "root       700     1  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     701   700  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     702   700  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     703   700  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     704   700  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     705   700  0 17:59 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start"
+    ]
+}
+
+TASK [monitoring : http curl test -- without following redirection] *************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+        "<html><head>",
+        "<title>301 Moved Permanently</title>",
+        "</head><body>",
+        "<h1>Moved Permanently</h1>",
+        "<p>The document has moved <a href=\"https://localhost/hello\">here</a>.</p>",
+        "</body></html>"
+    ]
+}
+
+TASK [monitoring : http curl test -- follow redirection] ************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "Hello from Wirecard DevOps Challenge!!"
+    ]
+}
+
+TASK [monitoring : https curl test] *********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Hello from Wirecard DevOps Challenge!!"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************
+localhost                  : ok=27   changed=21   unreachable=0    failed=0
+
+
+
+
+
+
+
+####################################################################
+# ANSIBLE PLAYBOOK EXECUTION DURING DOCKER IMAGE BUILDING PROCESS
+####################################################################
+
+[root@master challenge]# docker build .
+Sending build context to Docker daemon  16.3 MB
+Step 1/12 : FROM williamyeh/ansible:centos7
+ ---> 740848c0fd0f
+Step 2/12 : MAINTAINER Michal Polak <misopo@gmail.com>
+ ---> Using cache
+ ---> df80f97e6f5a
+Step 3/12 : ENV container docker
+ ---> Using cache
+ ---> dcd9f5ca4850
+Step 4/12 : RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); rm -f /lib/systemd/system/multi-user.target.wants/*;rm -f /etc/systemd/system/*.wants/*;rm -f /lib/systemd/system/local-fs.target.wants/*; rm -f /lib/systemd/system/sockets.target.wants/*udev*; rm -f /lib/systemd/system/sockets.target.wants/*initctl*; rm -f /lib/systemd/system/basic.target.wants/*;rm -f /lib/systemd/system/anaconda.target.wants/*;
+ ---> Using cache
+ ---> 24a82ef72313
+Step 5/12 : RUN mkdir -p /run/httpd
+ ---> Using cache
+ ---> 598532b22e0b
+Step 6/12 : VOLUME /sys/fs/cgroup
+ ---> Using cache
+ ---> 235142d7aa8f
+Step 7/12 : EXPOSE 80
+ ---> Using cache
+ ---> a9e5766d4c05
+Step 8/12 : EXPOSE 443
+ ---> Using cache
+ ---> b95bfaf2072c
+Step 9/12 : CMD /usr/sbin/init
+ ---> Using cache
+ ---> 8fb0e2580792
+Step 10/12 : WORKDIR /tmp
+ ---> Using cache
+ ---> d7586eb08c7b
+Step 11/12 : COPY . /tmp
+ ---> 71f6d366c2cf
+Removing intermediate container a58ecc0cf341
+Step 12/12 : RUN ansible-playbook challenge-wirecard/playbook-docker.yml
+ ---> Running in 113b32360e3a
+
+
+PLAY [localhost] ***************************************************************
+
+TASK [installation-docker : tomcat | java installation] ************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | group add] ********************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | user add] *********************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | binary download] **************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | extract archive] **************************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | symlink install directory] ****************
+changed: [localhost]
+
+TASK [installation-docker : tomcat | change ownership of target installation] ***
+changed: [localhost]
+
+TASK [installation-docker : tomcat | installation of  start stop scripts] ******
+changed: [localhost] => (item={u'dest': u'/opt/tomcat-latest/bin/tomcat_stop', u'src': u'tomcat_stop.j2'})
+changed: [localhost] => (item={u'dest': u'/opt/tomcat-latest/bin/tomcat_start', u'src': u'tomcat_start.j2'})
+
+TASK [installation-docker : tomcat | start] ************************************
+changed: [localhost]
+
+TASK [installation-docker : create self-signed SSL cert] ***********************
+changed: [localhost]
+
+TASK [installation-docker : httpd | installation] ******************************
+changed: [localhost] => (item=[u'httpd', u'mod_ssl'])
+
+TASK [installation-docker : httpd | configuration] *****************************
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf/httpd.conf', u'name': u'httpd.conf.j2'})
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf.d/challenge.conf', u'name': u'challenge.conf.j2'})
+
+TASK [installation-docker : httpd | disabling of default configuration] ********
+changed: [localhost]
+
+TASK [installation-docker : httpd | writting FQDN to hosts file] ***************
+changed: [localhost]
+
+TASK [installation-docker : httpd start] ***************************************
+changed: [localhost]
+
+TASK [deployment-docker : tomcat | deployment] *********************************
+changed: [localhost]
+
+TASK [monitoring : pause] ******************************************************
+Pausing for 20 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [localhost]
+
+TASK [monitoring : tomcat process] *********************************************
+changed: [localhost]
+
+TASK [monitoring : debug] ******************************************************
+ok: [localhost] => {
+    "msg": "tomcat     424     1 18 19:20 ?        00:00:13 /usr/bin/java -Djava.util.logging.config.file=/opt/tomcat-latest/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -Dignore.endorsed.dirs= -classpath /opt/tomcat-latest/bin/bootstrap.jar:/opt/tomcat-latest/bin/tomcat-juli.jar -Dcatalina.base=/opt/tomcat-latest -Dcatalina.home=/opt/tomcat-latest -Djava.io.tmpdir=/opt/tomcat-latest/temp org.apache.catalina.startup.Bootstrap start"
+}
+
+TASK [monitoring : httpd processes] ********************************************
+changed: [localhost]
+
+TASK [monitoring : debug] ******************************************************
+ok: [localhost] => {
+    "msg": [
+        "root       685     1  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     686   685  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     687   685  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     688   685  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     689   685  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start",
+        "apache     690   685  0 19:21 ?        00:00:00 /usr/sbin/httpd -d /etc/httpd -k start"
+    ]
+}
+
+TASK [monitoring : http curl test -- without following redirection] ************
+changed: [localhost]
+
+TASK [monitoring : debug] ******************************************************
+ok: [localhost] => {
+    "msg": [
+        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+        "<html><head>",
+        "<title>301 Moved Permanently</title>",
+        "</head><body>",
+        "<h1>Moved Permanently</h1>",
+        "<p>The document has moved <a href=\"https://localhost/hello\">here</a>.</p>",
+        "</body></html>"
+    ]
+}
+
+TASK [monitoring : http curl test -- follow redirection] ***********************
+changed: [localhost]
+
+TASK [monitoring : debug] ******************************************************
+ok: [localhost] => {
+    "msg": [
+        "Hello from Wirecard DevOps Challenge!!"
+    ]
+}
+
+TASK [monitoring : https curl test] ********************************************
+changed: [localhost]
+
+TASK [monitoring : debug] ******************************************************
+ok: [localhost] => {
+    "msg": "Hello from Wirecard DevOps Challenge!!"
+}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=27   changed=21   unreachable=0    failed=0
+
+ ---> ae6e22aadeac
+Removing intermediate container 113b32360e3a
+Successfully built ae6e22aadeac
+[root@master challenge]#
+
+
+
+
+
+####################################################################
+# ANSIBLE PLAYBOOK EXECUTION ON LOCAL SYSTEM WITH SYSTEMD 
+####################################################################
+
+[user@master challenge]$
+[user@master challenge]$ ansible-playbook challenge-wirecard/playbook-systemd.yml
+
+PLAY [localhost] ****************************************************************************************************************************************************
+
+TASK [installation-systemd : tomcat | java installation] ************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | group add] ********************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | user add] *********************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | binary download] **************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | extract archive] **************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | symlink install directory] ****************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | change ownership of target installation] **************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | systemd] **********************************************************************************************************************
+changed: [localhost]
+
+RUNNING HANDLER [installation-systemd : reload systemd] *************************************************************************************************************
+ok: [localhost]
+
+RUNNING HANDLER [installation-systemd : tomcat restart] *************************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : tomcat | start] ************************************************************************************************************************
+ok: [localhost]
+
+TASK [installation-systemd : create self-signed SSL cert] ***********************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : httpd | installation] ******************************************************************************************************************
+changed: [localhost] => (item=[u'httpd', u'mod_ssl'])
+
+TASK [installation-systemd : httpd | configuration] *****************************************************************************************************************
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf/httpd.conf', u'name': u'httpd.conf.j2'})
+changed: [localhost] => (item={u'path': u'/etc/httpd/conf.d/challenge.conf', u'name': u'challenge.conf.j2'})
+
+TASK [installation-systemd : httpd | disabling of default configuration] ********************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : httpd | writting FQDN to hosts file] ***************************************************************************************************
+changed: [localhost]
+
+TASK [installation-systemd : httpd start] ***************************************************************************************************************************
+changed: [localhost]
+
+TASK [deployment-systemd : tomcat | deployment] *********************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : pause] *******************************************************************************************************************************************
+Pausing for 20 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [localhost]
+
+TASK [monitoring : tomcat process] **********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "tomcat   18151     1 38 20:15 ?        00:00:15 /usr/bin/java -Djava.util.logging.config.file=/opt/tomcat-latest/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Dfile.encoding=UTF-8 -Dnet.sf.ehcache.skipUpdateCheck=true -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:+UseParNewGC -XX:MaxPermSize=128m -Xms512m -Xmx512m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/urandom -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -Dignore.endorsed.dirs= -classpath /opt/tomcat-latest/bin/bootstrap.jar:/opt/tomcat-latest/bin/tomcat-juli.jar -Dcatalina.base=/opt/tomcat-latest -Dcatalina.home=/opt/tomcat-latest -Djava.io.tmpdir=/opt/tomcat-latest/temp org.apache.catalina.startup.Bootstrap start"
+}
+
+TASK [monitoring : httpd processes] *********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "root     19202     1  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND",
+        "apache   19203 19202  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND",
+        "apache   19204 19202  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND",
+        "apache   19205 19202  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND",
+        "apache   19206 19202  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND",
+        "apache   19207 19202  0 20:16 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND"
+    ]
+}
+
+TASK [monitoring : http curl test -- without following redirection] *************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+        "<html><head>",
+        "<title>301 Moved Permanently</title>",
+        "</head><body>",
+        "<h1>Moved Permanently</h1>",
+        "<p>The document has moved <a href=\"https://localhost/hello\">here</a>.</p>",
+        "</body></html>"
+    ]
+}
+
+TASK [monitoring : http curl test -- follow redirection] ************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": [
+        "Hello from Wirecard DevOps Challenge!!"
+    ]
+}
+
+TASK [monitoring : https curl test] *********************************************************************************************************************************
+changed: [localhost]
+
+TASK [monitoring : debug] *******************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Hello from Wirecard DevOps Challenge!!"
+}
+
+RUNNING HANDLER [installation-systemd : tomcat restart] *************************************************************************************************************
+changed: [localhost]
+
+PLAY RECAP **********************************************************************************************************************************************************
+localhost                  : ok=30   changed=22   unreachable=0    failed=0
+
+[user@master challenge]$
+
+

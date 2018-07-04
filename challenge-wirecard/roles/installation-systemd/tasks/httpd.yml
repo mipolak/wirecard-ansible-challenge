@@ -1,0 +1,28 @@
+---
+ - name: httpd | installation
+   yum:
+    name: "{{ item }}"
+    state: present
+   with_items:
+    - httpd
+    - mod_ssl
+
+ - name: httpd | configuration
+   template:
+    src={{ item.name }}
+    dest={{ item.path }} 
+   with_items:
+     - { name: "httpd.conf.j2", path: "/etc/httpd/conf/httpd.conf" }
+     - { name: "challenge.conf.j2", path: "/etc/httpd/conf.d/challenge.conf" }
+
+ - name: httpd | disabling of default configuration
+   file:
+     state: absent
+     path: "/etc/httpd/conf.d/ssl.conf"
+
+ - name: httpd | writting FQDN to hosts file
+   shell: echo "$(ip a | grep inet | grep eth | cut -d '/' -f 1 | awk '{print $2}') challenge.me" >> /etc/hosts
+
+ - name: httpd start
+   systemd: name=httpd state=started enabled=yes
+   become: yes
