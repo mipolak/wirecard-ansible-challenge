@@ -45,16 +45,6 @@ If you want to use ansible, for example, use the branch ansible: `git checkout a
 You should write all of your code inside the folder `challenge-wirecard`.
 
 
-
-## Format
-* You must be prepared to walk an evaluator through all the created artifacts including tests, logic used, chosen tools.
-* Mention anything that was asked but not delivered and why, and any additional comments.
-* Any questions, please send an email to **sre.recruitment@wirecard.com**
-
-Thank you,
-The Wirecard Recruiting Team
-
-
 ##  LAB MACHINE DETAILS
 
 #####Parameters of VM:
