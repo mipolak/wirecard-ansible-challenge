@@ -1,1 +1,0 @@
-# Moip Configuration Management Challenge
