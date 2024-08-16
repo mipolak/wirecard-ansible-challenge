@@ -1,0 +1,11 @@
+---
+- name: tomcat_restart
+  ansible.builtin.systemd:
+    name: tomcat9
+    state: restarted
+
+- name: nginx_restart
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+

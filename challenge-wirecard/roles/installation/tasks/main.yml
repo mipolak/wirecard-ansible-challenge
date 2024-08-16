@@ -1,0 +1,88 @@
+---
+- name: Install packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ apt_pkgs }}"
+  tags:
+    - base
+
+- block:
+    - name: Folder /etc/ssl/csr
+      ansible.builtin.file:
+        path: /etc/ssl/csr
+        state: directory
+        mode: '0750'  
+
+    - name: Generate a Self Signed OpenSSL privatekey
+      community.crypto.openssl_privatekey:
+        path: /etc/ssl/private/{{ server_name }}.pem
+        size: 2048 
+        
+    - name: Generate a Self Signed OpenSSL CRS
+      community.crypto.openssl_csr:
+            path: /etc/ssl/csr/{{ server_name }}.csr
+            privatekey_path: /etc/ssl/private/{{ server_name }}.pem
+
+
+    - name: Generate a Self Signed OpenSSL certificate
+      community.crypto.x509_certificate:
+        path: /etc/ssl/certs/{{ server_name }}.crt
+        privatekey_path: /etc/ssl/private/{{ server_name }}.pem
+        csr_path: /etc/ssl/csr/{{ server_name }}.csr
+        provider: selfsigned
+        selfsigned_not_after: "+3650d" # this is the default
+        mode: "0644"
+  become: true
+  tags:
+    - ssl_certs
+
+- name: Register IP
+  ansible.builtin.shell: ip a | grep -P 'inet.* scope global'  | cut -d '/' -f 1 | awk '{print $2}'
+  args:
+    executable: /bin/bash
+  register: reg_ip
+
+- name: Register Hostname
+  ansible.builtin.shell: hostname
+  args:
+    executable: /bin/bash
+  register: reg_host
+
+- name: Set Facts
+  ansible.builtin.set_fact:
+    ip_addr: "{{ reg_ip.stdout }}"
+    host_name: "{{ reg_host.stdout }}"
+
+#- name: Writting FQDN to hosts file
+#  ansible.builtin.lineinfile:
+#    path: /etc/hosts
+#    line: "{{ ip_addr }} {{ host_name }} {{ server_name }}"
+#    create: yes
+#  become: true
+
+- name: Nginx conf 
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0640'
+    backup: yes
+  notify: nginx_restart
+  tags:
+    - nginx_conf
+
+- name: Enable services and ensure that are not masked
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    masked: no
+    state: started
+  with_items:
+    - "{{ services }}"
+  
+  
+
+      

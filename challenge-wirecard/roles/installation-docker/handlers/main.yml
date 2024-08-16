@@ -1,3 +1,0 @@
----
-- name: "tomcat start"
-  command: /opt/tomcat-latest/bin/tomcat_start

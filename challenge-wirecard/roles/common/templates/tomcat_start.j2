@@ -1,9 +1,0 @@
-#!/bin/bash
-CATALINA_PID=/opt/tomcat-latest/tomcat.pid
-TOMCAT_JAVA_HOME=/usr/java/default
-CATALINA_HOME=/opt/tomcat-latest
-CATALINA_BASE=/opt/tomcat-latest
-CATALINA_OPTS=
-JAVA_OPTS="-Dfile.encoding=UTF-8 -Dnet.sf.ehcache.skipUpdateCheck=true -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:+UseParNewGC -XX:MaxPermSize=128m -Xms512m -Xmx512m -Djava.net.preferIPv4Stack=true -Djava.security.egd=file:///dev/urandom"
-
-su - tomcat -c  /opt/tomcat-latest/bin/startup.sh

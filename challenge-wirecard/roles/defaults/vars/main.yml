@@ -1,0 +1,15 @@
+---
+apt_pkgs:
+  - tomcat9
+  - nginx
+  - default-jdk
+  - procps
+  - curl
+
+services:
+  - tomcat9
+  - nginx
+
+server_name: challenge.me
+
+tomcat_webapp_dir: "/var/lib/tomcat9/webapps"

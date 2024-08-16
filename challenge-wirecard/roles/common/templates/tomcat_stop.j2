@@ -1,6 +1,0 @@
-#!/bin/bash
-
-kill -15 $(ps -ef | grep catalina | grep java | grep -v grep | awk '{print $2}')
-
-rm -f /opt/tomcat-latest/tomcat.pid > /dev/null 2>&1
-

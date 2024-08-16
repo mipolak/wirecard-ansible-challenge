@@ -1,4 +1,0 @@
----
-- name: tomcat restart
-  systemd: name={{ tomcat_service_name }} state=restarted
-  when: war.changed

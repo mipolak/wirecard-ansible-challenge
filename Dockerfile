@@ -1,25 +1,37 @@
-FROM williamyeh/ansible:centos7
+FROM debian:bullseye
 
-MAINTAINER Michal Polak <misopo@gmail.com>
 ENV container docker
-RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
-systemd-tmpfiles-setup.service ] || rm -f $i; done); \
-rm -f /lib/systemd/system/multi-user.target.wants/*;\
-rm -f /etc/systemd/system/*.wants/*;\
-rm -f /lib/systemd/system/local-fs.target.wants/*; \
-rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-rm -f /lib/systemd/system/basic.target.wants/*;\
-rm -f /lib/systemd/system/anaconda.target.wants/*;
-RUN mkdir -p /run/httpd
+ENV LC_ALL C
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update \
+    && apt-get install -y systemd systemd-sysv iproute2 ansible \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN cd /lib/systemd/system/sysinit.target.wants/ \
+    && rm $(ls | grep -v systemd-tmpfiles-setup)
+
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl* \
+    /lib/systemd/system/basic.target.wants/* \
+    /lib/systemd/system/anaconda.target.wants/* \
+    /lib/systemd/system/plymouth* \
+    /lib/systemd/system/systemd-update-utmp*
+
 VOLUME [ "/sys/fs/cgroup" ]
+
+CMD ["/lib/systemd/systemd"]
 EXPOSE 80
 EXPOSE 443
-CMD ["/usr/sbin/init"]
 
-# ==> Copying Ansible playbook...
-WORKDIR /tmp
-COPY  .  /tmp
-
+# ==> Copying code ...
+WORKDIR /
+COPY  .  /
+WORKDIR /challenge-wirecard
+ENV ANSIBLE_CONFIG /challenge-wirecard/ansible.cfg
 # ==> Executing Ansible...
-#RUN ansible-playbook challenge-wirecard/playbook-docker.yml 
+# RUN ansible-playbook playbook.yml 

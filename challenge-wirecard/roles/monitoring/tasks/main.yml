@@ -2,34 +2,29 @@
  - pause: 
      seconds: 20 
 
- - name: tomcat process
-   shell: ps -ef | grep catalina | grep -v grep
-   register: tom_proc
- - debug: msg="{{ tom_proc.stdout }}"
-
- - name: httpd processes
-   shell: ps -ef | grep -i httpd | grep -v grep
-   register: httpd_proc
- - debug: msg="{{ httpd_proc.stdout_lines }}"
+ - name: Process check
+   shell: ps -ef 
+   register: reg_proc
+ - debug: msg="{{ reg_proc.stdout }}"
 
  - name: http curl test -- without following redirection
-   command: curl http://localhost:80/hello
+   shell: curl http://localhost/hello
    args:
     warn: false
    register: result
  - debug: msg="{{ result.stdout_lines }}"
 
  - name: http curl test -- follow redirection
-   command: curl -L -k http://localhost:80/hello
+   shell: curl -L -k http://localhost:80/hello
    args:
     warn: false
    register: follow
  - debug: msg="{{ follow.stdout_lines }}"
 
  - name: https curl test
-   command: curl -k https://localhost:443/hello
+   shell: curl -k https://localhost/hello
    args:
     warn: false
-   register: ssl
- - debug: msg="{{ ssl.stdout }}"
+   register: ssl_out
+ - debug: msg="{{ ssl_out.stdout }}"
 
